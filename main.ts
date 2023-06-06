@@ -52,7 +52,7 @@ async function createClient() {
     username: Deno.env.get("ANIME_API_DB_USER") || "root",
     db: "anime_admin_development",
     poolSize: 3, // connection limit
-    password: env.ANIME_API_DB_PASS || "password",
+    password: Deno.env.get("ANIME_API_DB_PASS") || "password",
   });
   return client;
 }
