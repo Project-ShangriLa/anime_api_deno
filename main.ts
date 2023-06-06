@@ -45,14 +45,20 @@ interface CoursInfo {
   updated_at: Date;
 }
 
-async function coursHandler(_w: ServerRequest, _r: RouteParams) {
+// Mysqlのコネクションクライアントを作成して返却する関数
+async function createClient() {
   const client = await new Client().connect({
     hostname: Deno.env.get("ANIME_API_DB_HOST") || "localhost",
     username: Deno.env.get("ANIME_API_DB_USER") || "root",
     db: "anime_admin_development",
+    poolSize: 3, // connection limit
     password: env.ANIME_API_DB_PASS || "password",
   });
+  return client;
+}
 
+async function coursHandler(_w: ServerRequest, _r: RouteParams) {
+  const client = await createClient();
   const coursInfoList: CoursInfo[] = await client.query(
     "SELECT * FROM cours_infos",
   );
@@ -67,7 +73,7 @@ async function coursHandler(_w: ServerRequest, _r: RouteParams) {
   }
 
   _w.response.body = coursMap;
-  await client.close();
+  //await client.close();
 }
 
 async function yearTitleHandler(w: ServerRequest, r: RouteParams) {
