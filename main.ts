@@ -6,6 +6,7 @@ import {
 } from "https://deno.land/x/oak/mod.ts";
 import { config } from "https://deno.land/x/dotenv/mod.ts";
 import { Client } from "https://deno.land/x/mysql/mod.ts";
+import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
 // envファイルの読み込み
 const env = config();  
@@ -155,6 +156,7 @@ async function startApp() {
   // API認証ミドルウェアを登録
   //app.use(middlewareAdminAuthAPI);
 
+  app.use(oakCors()); // Enable CORS for All Routes
   // ルートを登録
   app.use(router.routes());
   app.use(router.allowedMethods());
