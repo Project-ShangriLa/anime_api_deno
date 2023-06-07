@@ -48,11 +48,11 @@ interface CoursInfo {
 // Mysqlのコネクションクライアントを作成して返却する関数
 async function createClient() {
   const client = await new Client().connect({
-    hostname: Deno.env.get("ANIME_API_DB_HOST") || "localhost",
-    username: Deno.env.get("ANIME_API_DB_USER") || "root",
+    hostname: Deno.env.get("ANIME_API_DB_HOST") || env.ANIME_API_DB_HOST,
+    username: Deno.env.get("ANIME_API_DB_USER") || env.ANIME_API_DB_USER,
     db: "anime_admin_development",
-    poolSize: 3, // connection limit
-    password: Deno.env.get("ANIME_API_DB_PASS") || "password",
+    poolSize: 5, // connection limit
+    password: Deno.env.get("ANIME_API_DB_PASS") || env.ANIME_API_DB_PASS,
   });
   return client;
 }
@@ -108,6 +108,17 @@ async function cacheRefresh(w: ServerRequest, r: RouteParams) {
   }
 }
 
+async function pool(_w: ServerRequest, _r: RouteParams) {
+  const client = await createClient();
+  // client.pool()の結果を変数に格納する
+  const pool = client.pool;
+
+   // poolの情報をJSONに変換してレスポンスのボディに設定する
+  _w.response.headers.set("Content-Type", "application/json");
+  _w.response.status = 200;
+  _w.response.body = JSON.stringify(pool, null, 2);
+}
+
 // 管理者用API認証ミドルウェア
 async function middlewareAdminAuthAPI(
   ctx: { request: ServerRequest; response: Response },
@@ -135,6 +146,7 @@ async function startApp() {
 
   router.post("/anime/v1/master/cache/clear", cacheClear);
   router.post("/anime/v1/master/cache/refresh", cacheRefresh);
+  router.get("/pool", pool);
   // 時刻を返すエンドポイントの登録
   router.get("/time", (ctx) => {
     const now = new Date(); // 現在の時刻を取得
