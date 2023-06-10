@@ -1,15 +1,15 @@
 import {
   Application,
+  Context,
   Response,
   Router,
-  ServerRequest,
 } from "https://deno.land/x/oak/mod.ts";
 import { config } from "https://deno.land/x/dotenv/mod.ts";
-import { Client } from "https://deno.land/x/mysql/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
 // envファイルの読み込み
-const env = config();  
+const env = config();
 
 // 定数の設定
 const COURSID_MIN = 1;
@@ -35,46 +35,32 @@ async function selectBasesWithOgpRdb(id: number) {
   // TODO: ここでデータベースからデータを取得します
 }
 
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || env.SUPABASE_URL;
+const supabaseKey = Deno.env.get("SUPABASE_KEY") || env.SUPABASE_KEY;
 
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-interface CoursInfo {
-  id: number;
-  year: number;
-  cours: number;
-  cours_name: string;
-  created_at: Date;
-  updated_at: Date;
-}
+async function coursHandler(context: Context) {
+  const { data, error: _ } = await supabase
+    .from("cours_infos")
+    .select();
 
-// Mysqlのコネクションクライアントを作成して返却する関数
-async function createClient() {
-  const client = await new Client().connect({
-    hostname: Deno.env.get("ANIME_API_DB_HOST") || env.ANIME_API_DB_HOST,
-    username: Deno.env.get("ANIME_API_DB_USER") || env.ANIME_API_DB_USER,
-    db: "anime_admin_development",
-    poolSize: 5, // connection limit
-    password: Deno.env.get("ANIME_API_DB_PASS") || env.ANIME_API_DB_PASS,
-  });
-  return client;
-}
+  if (data) {
+    const transformedResponse = data.reduce((acc, curr) => {
+      acc[curr.id] = {
+        id: curr.id,
+        year: curr.year,
+        cours: curr.cours,
+      };
 
-async function coursHandler(_w: ServerRequest, _r: RouteParams) {
-  const client = await createClient();
-  const coursInfoList: CoursInfo[] = await client.query(
-    "SELECT * FROM cours_infos",
-  );
+      return acc;
+    }, {});
 
-  // CoursInfoの情報をログに出力
-  // console.log(coursInfoList);
-  
-  const coursMap: { [id: string]: CoursInfo } = {};
-
-  for (const cil of coursInfoList) {
-    coursMap[cil.id.toString()] = cil;
+    const response = JSON.stringify(transformedResponse, null, 2);
+    context.response.body = response;
+  } else {
+    context.response.body = "Error fetching data";
   }
-
-  _w.response.body = coursMap;
-  //await client.close();
 }
 
 async function yearTitleHandler(w: ServerRequest, r: RouteParams) {
@@ -109,17 +95,6 @@ async function cacheRefresh(w: ServerRequest, r: RouteParams) {
   }
 }
 
-async function pool(_w: ServerRequest, _r: RouteParams) {
-  const client = await createClient();
-  // client.pool()の結果を変数に格納する
-  const pool = client.pool;
-
-   // poolの情報をJSONに変換してレスポンスのボディに設定する
-  _w.response.headers.set("Content-Type", "application/json");
-  _w.response.status = 200;
-  _w.response.body = JSON.stringify(pool, null, 2);
-}
-
 // 管理者用API認証ミドルウェア
 async function middlewareAdminAuthAPI(
   ctx: { request: ServerRequest; response: Response },
@@ -136,18 +111,24 @@ async function middlewareAdminAuthAPI(
   }
 }
 
+function rootPage(ctx: Context) {
+  ctx.response.body = "ShangriLa Anime API\n\
+https://github.com/Project-ShangriLa";
+}
+
 // アプリケーションを起動する
 async function startApp() {
   const app = new Application();
   const router = new Router();
 
+
+  router.get('/', rootPage);
   router.get("/anime/v1/master/cours", coursHandler);
   router.get("/anime/v1/master/:year_num", yearTitleHandler);
   router.get("/anime/v1/master/:year_num/:cours", animeAPIReadHandler);
 
   router.post("/anime/v1/master/cache/clear", cacheClear);
   router.post("/anime/v1/master/cache/refresh", cacheRefresh);
-  router.get("/pool", pool);
   // 時刻を返すエンドポイントの登録
   router.get("/time", (ctx) => {
     const now = new Date(); // 現在の時刻を取得
