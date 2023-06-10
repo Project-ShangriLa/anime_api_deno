@@ -11,9 +11,9 @@ import { oakCors } from "https://deno.land/x/cors@v1.2.2/mod.ts";
 
 type RouterContext = XContext<any, any, any>;
 
-const coursidMin = 1;
+const COURSID_MIN = 1;
 // COURID_IDの理論的最大値 2014 + COURID_MAX/4 = 年数、2039年までリクエストを許容
-const coursidMax = 104;
+const COURSID_MAX = 104;
 
 const env = config();
 const adminApiKey = Deno.env.get("ADMIN_API_KEY") || env.ADMIN_API_KEY;
@@ -24,16 +24,58 @@ const supabaseKey = Deno.env.get("SUPABASE_KEY") || env.SUPABASE_KEY;
 let cacheBases = new Map<number, string>();
 let cacheBasesWithOgp = new Map<number, string>();
 
-interface RouteParams {
-  year_num?: string;
-  cours?: string;
-}
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// データベースからデータを取得する関数（抽象化）
-async function selectBasesRdb(id: number) {
-  // TODO: ここでデータベースからデータを取得します
+interface Base {
+  [key: string]: string | number | null;
+  id: number;
+  title: string;
+  title_short1: string;
+  title_short2: string;
+  title_short3: string;
+  title_en: string;
+  public_url: string;
+  twitter_account: string;
+  twitter_hash_tag: string;
+  cours_id: number;
+  created_at: string;
+  updated_at: string;
+  sex: number;
+  sequel: number;
+  city_code: number;
+  city_name: string;
+  product_companies: string;
+}
+
+async function selectBasesRdb(coursId: number): Promise<Base[]> {
+  const { data, error } = await supabase
+    .from("bases")
+    .select(`
+      id,
+      title,
+      title_short1,
+      title_short2,
+      title_short3,
+      title_en,
+      public_url,
+      twitter_account,
+      twitter_hash_tag,
+      cours_id,
+      created_at,
+      updated_at,
+      sex,
+      sequel,
+      city_code,
+      city_name,
+      product_companies
+    `)
+    .eq("cours_id", coursId);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
 }
 
 async function selectBasesWithOgpRdb(id: number) {
@@ -73,7 +115,7 @@ async function yearTitleHandler(context: RouterContext) {
     const { data, error: _ } = await supabase
       .from("cours_infos")
       .select("id")
-      .eq("year", yearNum); 
+      .eq("year", yearNum);
     const idTitles = await Promise.all(
       data?.map(async (cours) => {
         const { data: data2, error: _ } = await supabase
@@ -83,7 +125,7 @@ async function yearTitleHandler(context: RouterContext) {
         return data2;
       }) || [],
     );
-    
+
     // idTitlesをJSONに変換しレスポンスに格納する
     // idTitlesは配列の配列なので、配列をフラットにする
     const idTitlesFlat = idTitles.flat();
@@ -101,8 +143,37 @@ async function animeAPIReadHandler(context: RouterContext) {
     const cours = parseInt(context.params.cours);
     const cid: number = yearSeson2Cours(yearNum, cours);
     context.response.body = cid.toString();
+
+    if (cid < COURSID_MIN || cid > COURSID_MAX) {
+      // http status エラーを返す
+      context.response.status = 400;
+      // レスポンスの本文としてエラーメッセージが入ったJSONを返す
+      context.response.body = JSON.stringify({ error: "Bad Request" });
+      return;
+    }
+    // cidをもとにselectBasesRdbを呼び出す
+    const bases: Base[] = await selectBasesRdb(cid);
+
+    // basesの中でstring型で値がnullのものを空文字に変換する
+    bases.forEach((base) => {
+      Object.keys(base).forEach((key) => {
+        //console.log(typeof base[key] + " " + base[key]);
+        if (typeof base[key] === "object" && base[key] === null) {
+          console.log(key);
+          base[key] = "";
+        }
+      })
+    })
+
+    // jsonをレスポンスに格納する
+    if (bases) {
+      context.response.body = JSON.stringify(bases, null, 2);
+    }
   } else {
-    context.response.body = "ERROR";
+    // http status エラーを返す
+    context.response.status = 400;
+    // レスポンスの本文としてエラーメッセージが入ったJSONを返す
+    context.response.body = JSON.stringify({ error: "Bad Request" });
   }
 }
 
