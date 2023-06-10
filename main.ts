@@ -3,11 +3,12 @@ import {
   Context,
   Response,
   Router,
-} from "https://deno.land/x/oak/mod.ts";
-import type { RouterContext as XContext } from "https://deno.land/x/oak/mod.ts";
-import { config } from "https://deno.land/x/dotenv/mod.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { oakCors } from "https://deno.land/x/cors/mod.ts";
+} from "https://deno.land/x/oak@v12.5.0/mod.ts";
+import type { RouterContext as XContext } from "https://deno.land/x/oak@v12.5.0/mod.ts";
+import { config } from "https://deno.land/x/dotenv@v3.2.2/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.24.0";
+import { oakCors } from "https://deno.land/x/cors@v1.2.2/mod.ts";
+
 type RouterContext = XContext<any, any, any>;
 
 const coursidMin = 1;
@@ -72,10 +73,10 @@ async function animeAPIReadHandler(context: RouterContext) {
   if (context?.params?.year_num && context?.params?.cours) {
     const yearNum = parseInt(context.params.year_num);
     const cours = parseInt(context.params.cours);
-    const cid: number = yearSeson2Cours( yearNum, cours); 
+    const cid: number = yearSeson2Cours(yearNum, cours);
     context.response.body = cid.toString();
   } else {
-    context.response.body = "ERROR"
+    context.response.body = "ERROR";
   }
 }
 
