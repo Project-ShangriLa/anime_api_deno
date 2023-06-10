@@ -17,7 +17,7 @@ ShangriLa Anime API Server [2023~]
 - Database: Supabase
 - Deploy: Deno Delpoy
 
-### 起動方法 (リリース)
+### 起動方法
 
 ```
 deno task dev
@@ -25,7 +25,7 @@ deno task dev
 
 ### エンドポイント
 
-http://anime-api.deno.dev/anime/v1
+http://anime-api.deno.dev/
 
 ### 認証
 

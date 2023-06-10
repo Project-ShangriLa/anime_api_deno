@@ -65,7 +65,31 @@ async function coursHandler(context: Context) {
 
 async function yearTitleHandler(context: RouterContext) {
   if (context?.params?.year_num) {
-    context.response.body = context.params.year_num;
+    const year = context.params.year_num;
+    // yearを数値に変換する
+    const yearNum = parseInt(year);
+
+    // cours_infosテーブルからyearをキーにしてidカラムのみを取得する、そのidをキーにbasesテーブルのidとtitleカラムを取得する
+    const { data, error: _ } = await supabase
+      .from("cours_infos")
+      .select("id")
+      .eq("year", yearNum); 
+    const idTitles = await Promise.all(
+      data?.map(async (cours) => {
+        const { data: data2, error: _ } = await supabase
+          .from("bases")
+          .select("id, title")
+          .eq("cours_id", cours.id);
+        return data2;
+      }) || [],
+    );
+
+    // idTitlesをJSONに変換しレスポンスに格納する
+    if (idTitles) {
+      context.response.body = JSON.stringify(idTitles, null, 2);
+    }
+  } else {
+    context.response.body = "Error fetching data";
   }
 }
 
@@ -142,7 +166,7 @@ async function startApp() {
 
   router.post("/anime/v1/master/cache/clear", cacheClear);
   router.post("/anime/v1/master/cache/refresh", cacheRefresh);
-  // 時刻を返すエンドポイントの登録
+  // 時刻を返すエンドポイントの登録（テスト用）
   router.get("/time", (ctx) => {
     const now = new Date(); // 現在の時刻を取得
     ctx.response.body = { "time": now.toISOString() }; // JSON形式で現在の時刻を返す
@@ -150,6 +174,7 @@ async function startApp() {
   // API認証ミドルウェアを登録
   //app.use(middlewareAdminAuthAPI);
 
+  //TODO: 必要なルーティングのみに絞りたい
   app.use(oakCors()); // Enable CORS for All Routes
   // ルートを登録
   app.use(router.routes());
