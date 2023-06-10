@@ -83,10 +83,12 @@ async function yearTitleHandler(context: RouterContext) {
         return data2;
       }) || [],
     );
-
+    
     // idTitlesをJSONに変換しレスポンスに格納する
-    if (idTitles) {
-      context.response.body = JSON.stringify(idTitles, null, 2);
+    // idTitlesは配列の配列なので、配列をフラットにする
+    const idTitlesFlat = idTitles.flat();
+    if (idTitlesFlat) {
+      context.response.body = JSON.stringify(idTitlesFlat, null, 2);
     }
   } else {
     context.response.body = "Error fetching data";
