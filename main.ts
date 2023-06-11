@@ -203,6 +203,8 @@ async function animeAPIReadHandler(context: RouterContext) {
   if (context?.params?.year_num && context?.params?.cours) {
     const yearNum = parseInt(context.params.year_num);
     const cours = parseInt(context.params.cours);
+    // 現在時刻とyearNumとcoursをログレベルインフォで出力する
+    console.info(new Date().toLocaleString(), yearNum, cours);
     const cid: number = yearSeson2Cours(yearNum, cours);
     context.response.body = cid.toString();
 
