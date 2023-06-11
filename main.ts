@@ -110,7 +110,7 @@ async function selectBasesWithOgpRdb(coursId: number) {
         product_companies,
         site_meta_data (
           og_title,
-          og_title,
+          og_type,
           og_description,
           og_url,
           og_image,
@@ -125,7 +125,7 @@ async function selectBasesWithOgpRdb(coursId: number) {
 
   if (data) {
     return data.map(item => {
-      const newItem = { ...item };
+      const newItem: any = { ...item }; // newItemの型を一時的にanyとする
       if (newItem.site_meta_data) {
         newItem.ogp = Object.fromEntries(
           Object.entries(newItem.site_meta_data).map(([key, value]) => [
@@ -138,7 +138,6 @@ async function selectBasesWithOgpRdb(coursId: number) {
       return newItem;
     });
   }
-
 
   return [];
 }
