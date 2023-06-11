@@ -47,6 +47,14 @@ interface Base {
   product_companies: string;
 }
 
+interface Ogp {
+  og_title: string;
+  og_description: string;
+  og_url: string;
+  og_image: string;
+  og_site_name: string;
+}
+
 async function selectBasesRdb(coursId: number): Promise<Base[]> {
   const { data, error } = await supabase
     .from("bases")
@@ -78,8 +86,61 @@ async function selectBasesRdb(coursId: number): Promise<Base[]> {
   return data || [];
 }
 
-async function selectBasesWithOgpRdb(id: number) {
-  // TODO: ここでデータベースからデータを取得します
+async function selectBasesWithOgpRdb(coursId: number) {
+  // JOINするときは適切にテーブルに外部キーが設定されている必要がある
+  const { data, error } = await supabase
+    .from("bases")
+    .select(`
+        id,
+        title,
+        title_short1,
+        title_short2,
+        title_short3,
+        title_en,
+        public_url,
+        twitter_account,
+        twitter_hash_tag,
+        cours_id,
+        created_at,
+        updated_at,
+        sex,
+        sequel,
+        city_code,
+        city_name,
+        product_companies,
+        site_meta_data (
+          og_title,
+          og_title,
+          og_description,
+          og_url,
+          og_image,
+          og_site_name
+        )
+  `)
+    .eq("cours_id", coursId);
+
+  if (error) {
+    throw error;
+  }
+
+  if (data) {
+    return data.map(item => {
+      const newItem = { ...item };
+      if (newItem.site_meta_data) {
+        newItem.ogp = Object.fromEntries(
+          Object.entries(newItem.site_meta_data).map(([key, value]) => [
+            key,
+            value == null ? "" : value
+          ])
+        );
+      }
+      delete newItem.site_meta_data;
+      return newItem;
+    });
+  }
+
+
+  return [];
 }
 
 async function coursHandler(context: Context) {
@@ -151,6 +212,25 @@ async function animeAPIReadHandler(context: RouterContext) {
       context.response.body = JSON.stringify({ error: "Bad Request" });
       return;
     }
+
+    // console.log(context.request.url.searchParams.get("ogp"));
+    // リクエストパラメータにogpがあり値が1の場合の処理
+    if (context.request.url.searchParams.get("ogp") === "1") {
+      const basesWithOgp = await selectBasesWithOgpRdb(cid);
+      if (basesWithOgp) {
+        // basesの中でstring型で値がnullのものを空文字に変換する
+        basesWithOgp.forEach((base) => {
+          Object.keys(base).forEach((key) => {
+            if (typeof base[key] === "object" && base[key] === null) {
+              base[key] = "";
+            }
+          });
+        });
+        context.response.body = JSON.stringify(basesWithOgp, null, 2);
+      }
+      return;
+    }
+
     // cidをもとにselectBasesRdbを呼び出す
     const bases: Base[] = await selectBasesRdb(cid);
 
@@ -159,11 +239,10 @@ async function animeAPIReadHandler(context: RouterContext) {
       Object.keys(base).forEach((key) => {
         //console.log(typeof base[key] + " " + base[key]);
         if (typeof base[key] === "object" && base[key] === null) {
-          console.log(key);
           base[key] = "";
         }
-      })
-    })
+      });
+    });
 
     // jsonをレスポンスに格納する
     if (bases) {
@@ -177,13 +256,13 @@ async function animeAPIReadHandler(context: RouterContext) {
   }
 }
 
-// キャッシュを全てクリアする
+// TODO キャッシュを全てクリアする
 async function cacheClear(context: Context) {
   cacheBases = new Map();
   cacheBasesWithOgp = new Map();
 }
 
-// キャッシュを全て再取得する
+// TODO キャッシュを全て再取得する
 async function cacheRefresh(context: Context) {
   cacheBases = new Map();
   cacheBasesWithOgp = new Map();
@@ -205,7 +284,7 @@ function yearSeson2Cours(year: number, season: number): number {
   return (year - 2014) * 4 + season;
 }
 
-// 管理者用API認証ミドルウェア
+// TODO 管理者用API認証ミドルウェア
 async function middlewareAdminAuthAPI(
   ctx: { request: ServerRequest; response: Response },
   next: () => Promise<void>,

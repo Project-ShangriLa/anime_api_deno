@@ -25,7 +25,7 @@ deno task dev
 
 ### エンドポイント
 
-http://anime-api.deno.dev/
+https://anime-api.deno.dev/
 
 ### 認証
 
@@ -62,7 +62,7 @@ ShangriLa API Serverが持っているアニメ情報のクールごとの情報
 レスポンス例
 
 ```
- $curl http://anime-api.deno.dev/anime/v1/master/cours | jq .
+ $curl https://anime-api.deno.dev/anime/v1/master/cours | jq .
 
 {
   "4": {
@@ -109,7 +109,7 @@ ShangriLa API Serverが持っているアニメ情報のクールごとの情報
 レスポンス例
 
 ```
-curl http://anime-api.deno.dev/anime/v1/master/2015 | jq .
+curl https://anime-api.deno.dev/anime/v1/master/2015 | jq .
 [
   {
     "id": 124,
@@ -166,7 +166,7 @@ requiredに◯がないものは値なし(=データメンテナンスしてい�
 | title_short1 |String|-|アニメ作品名の略称1|"冴えカノ"|
 | title_short2 |String|-|アニメ作品名の略称2||
 | title_short3 |String|-|アニメ作品名の略称3||
-| public_url   |String|◯|アニメ作品の公式URL|"http://www.saenai.tv/"|
+| public_url   |String|◯|アニメ作品の公式URL|"https://www.saenai.tv/"|
 | twitter_account|String|◯|ツイッターアカウント|"saenai_heroine"|
 | twitter_hash_tag|String|◯|ツイッターハッシュタグ|"saekano"|
 | cours_id     |Number|◯|coursマスターのID|5|
@@ -180,12 +180,12 @@ requiredに◯がないものは値なし(=データメンテナンスしてい�
 レスポンス例
 
 ```
-curl http://anime-api.deno.dev/anime/v1/master/2016/4 | jq .
+curl https://anime-api.deno.dev/anime/v1/master/2016/4 | jq .
 [
   {
     "title_short2": "",
     "twitter_account": "3lion_anime",
-    "public_url": "http://www.nhk.or.jp/anime/3lion/",
+    "public_url": "https://www.nhk.or.jp/anime/3lion/",
     "title_short1": "3月のライオン",
     "sex": 0,
     "twitter_hash_tag": "３月のライオン",
@@ -202,7 +202,7 @@ curl http://anime-api.deno.dev/anime/v1/master/2016/4 | jq .
   {
     "title_short2": "Occultic;Nine",
     "twitter_account": "occultic_nine",
-    "public_url": "http://www.occultic-nine.com/",
+    "public_url": "https://www.occultic-nine.com/",
     "title_short1": "オカルティック・ナイン",
     "sex": 0,
     "twitter_hash_tag": "オカン",
