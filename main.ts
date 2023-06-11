@@ -160,6 +160,7 @@ async function coursHandler(context: Context) {
 
     const response = JSON.stringify(transformedResponse, null, 2);
     context.response.body = response;
+    context.response.headers.set("Content-Type", "application/json");
   } else {
     context.response.body = "Error fetching data";
   }
@@ -190,6 +191,7 @@ async function yearTitleHandler(context: RouterContext) {
     // idTitlesは配列の配列なので、配列をフラットにする
     const idTitlesFlat = idTitles.flat();
     if (idTitlesFlat) {
+      context.response.headers.set("Content-Type", "application/json");
       context.response.body = JSON.stringify(idTitlesFlat, null, 2);
     }
   } else {
@@ -225,6 +227,7 @@ async function animeAPIReadHandler(context: RouterContext) {
             }
           });
         });
+        context.response.headers.set("Content-Type", "application/json");
         context.response.body = JSON.stringify(basesWithOgp, null, 2);
       }
       return;
@@ -245,6 +248,7 @@ async function animeAPIReadHandler(context: RouterContext) {
 
     // jsonをレスポンスに格納する
     if (bases) {
+      context.response.headers.set("Content-Type", "application/json");
       context.response.body = JSON.stringify(bases, null, 2);
     }
   } else {
@@ -320,6 +324,7 @@ async function startApp() {
   // 時刻を返すエンドポイントの登録（テスト用）
   router.get("/time", (ctx) => {
     const now = new Date(); // 現在の時刻を取得
+    ctx.response.headers.set("Content-Type", "application/json"); // レスポンスのヘッダーにJSON形式であることを明示
     ctx.response.body = { "time": now.toISOString() }; // JSON形式で現在の時刻を返す
   });
   // API認証ミドルウェアを登録
