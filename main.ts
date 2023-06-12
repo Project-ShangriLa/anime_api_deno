@@ -1,7 +1,6 @@
 import {
   Application,
   Context,
-  Response,
   Router,
 } from "https://deno.land/x/oak@v12.5.0/mod.ts";
 import type { RouterContext as XContext } from "https://deno.land/x/oak@v12.5.0/mod.ts";
@@ -16,13 +15,9 @@ const COURSID_MIN = 1;
 const COURSID_MAX = 104;
 
 const env = config();
-const adminApiKey = Deno.env.get("ADMIN_API_KEY") || env.ADMIN_API_KEY;
+// const adminApiKey = Deno.env.get("ADMIN_API_KEY") || env.ADMIN_API_KEY;
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || env.SUPABASE_URL;
 const supabaseKey = Deno.env.get("SUPABASE_KEY") || env.SUPABASE_KEY;
-
-// キャッシュマップの定義
-let cacheBases = new Map<number, string>();
-let cacheBasesWithOgp = new Map<number, string>();
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -265,52 +260,12 @@ async function animeAPIReadHandler(context: RouterContext) {
   }
 }
 
-// TODO キャッシュを全てクリアする
-async function cacheClear(context: Context) {
-  cacheBases = new Map();
-  cacheBasesWithOgp = new Map();
-}
-
-// TODO キャッシュを全て再取得する
-async function cacheRefresh(context: Context) {
-  cacheBases = new Map();
-  cacheBasesWithOgp = new Map();
-
-  for (let i = coursidMin; i <= coursidMax; i++) {
-    let json = await selectBasesRdb(i);
-    if (json) {
-      cacheBases.set(i, json);
-    }
-
-    json = await selectBasesWithOgpRdb(i);
-    if (json) {
-      cacheBasesWithOgp.set(i, json);
-    }
-  }
-}
-
 function yearSeson2Cours(year: number, season: number): number {
   return (year - 2014) * 4 + season;
 }
 
-// TODO 管理者用API認証ミドルウェア
-async function middlewareAdminAuthAPI(
-  ctx: { request: ServerRequest; response: Response },
-  next: () => Promise<void>,
-) {
-  const headers = ctx.request.headers;
-  const apiKey = headers.get("X-ANIME_CLI_API_KEY");
-
-  if (apiKey !== adminApiKey) {
-    ctx.response.status = 401;
-    ctx.response.body = "Unauthorized";
-  } else {
-    await next();
-  }
-}
-
 function rootPage(ctx: Context) {
-  ctx.response.body = "ShangriLa Anime API\n\
+  ctx.response.body = "ShangriLa Anime API (230612A)\n\
 https://github.com/Project-ShangriLa";
 }
 
@@ -327,7 +282,7 @@ function jst(): string {
     hourCycle: 'h23'
   };
   
-  return new Intl.DateTimeFormat('en-GB', options).format(date);
+  return new Intl.DateTimeFormat('ja-JP', options).format(date);
 }
 
 // アプリケーションを起動する
@@ -339,22 +294,24 @@ async function startApp() {
   router.get("/anime/v1/master/cours", coursHandler);
   router.get("/anime/v1/master/:year_num", yearTitleHandler);
 
-  router.get("/anime/v1/master/:year_num/:cours", animeAPIReadHandler);
+  router.get("/anime/v1/master/:year_num/:cours", oakCors(), animeAPIReadHandler);
 
-  router.post("/anime/v1/master/cache/clear", cacheClear);
-  router.post("/anime/v1/master/cache/refresh", cacheRefresh);
+  // router.post("/anime/v1/master/cache/clear", cacheClear);
+  // router.post("/anime/v1/master/cache/refresh", cacheRefresh);
+
   // 時刻を返すエンドポイントの登録（テスト用）
-  router.get("/time", (ctx) => {
+  router.get("/time", oakCors(), (ctx) => {
     const now = new Date(); // 現在の時刻を取得
     ctx.response.headers.set("Content-Type", "application/json"); // レスポンスのヘッダーにJSON形式であることを明示
     ctx.response.body = { "time": now.toISOString() }; // JSON形式で現在の時刻を返す
   });
+  
   // API認証ミドルウェアを登録
   //app.use(middlewareAdminAuthAPI);
 
-  //TODO: 必要なルーティングのみに絞りたい
-  app.use(oakCors()); // Enable CORS for All Routes
+  // app.use(oakCors()); // Enable CORS for All Routes
   // ルートを登録
+
   app.use(router.routes());
   app.use(router.allowedMethods());
 
