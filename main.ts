@@ -24,7 +24,11 @@ const supabaseKey = Deno.env.get("SUPABASE_KEY") || env.SUPABASE_KEY;
 let cacheBases = new Map<number, string>();
 let cacheBasesWithOgp = new Map<number, string>();
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+  },
+});
 
 interface Base {
   [key: string]: string | number | null;
@@ -124,14 +128,14 @@ async function selectBasesWithOgpRdb(coursId: number) {
   }
 
   if (data) {
-    return data.map(item => {
+    return data.map((item) => {
       const newItem: any = { ...item }; // newItemの型を一時的にanyとする
       if (newItem.site_meta_data) {
         newItem.ogp = Object.fromEntries(
           Object.entries(newItem.site_meta_data).map(([key, value]) => [
             key,
-            value == null ? "" : value
-          ])
+            value == null ? "" : value,
+          ]),
         );
       }
       delete newItem.site_meta_data;
@@ -337,6 +341,9 @@ async function startApp() {
   // ルートを登録
   app.use(router.routes());
   app.use(router.allowedMethods());
+
+  // 起動ログ
+  console.info(new Date().toLocaleString(), "==== Server Start ====");
 
   // アプリケーションを起動
   await app.listen({ port: 8000 });
