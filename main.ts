@@ -208,7 +208,7 @@ async function animeAPIReadHandler(context: RouterContext) {
     const yearNum = parseInt(context.params.year_num);
     const cours = parseInt(context.params.cours);
     // 現在時刻とyearNumとcoursをログレベルインフォで出力する
-    console.info(new Date().toLocaleString(), yearNum, cours);
+    console.info(jst(), yearNum, cours);
     const cid: number = yearSeson2Cours(yearNum, cours);
     context.response.body = cid.toString();
 
@@ -314,6 +314,22 @@ function rootPage(ctx: Context) {
 https://github.com/Project-ShangriLa";
 }
 
+function jst(): string {
+  const date = new Date();
+  const options: Intl.DateTimeFormatOptions = { 
+    timeZone: "Asia/Tokyo", 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit', 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit', 
+    hourCycle: 'h23'
+  };
+  
+  return new Intl.DateTimeFormat('en-GB', options).format(date);
+}
+
 // アプリケーションを起動する
 async function startApp() {
   const app = new Application();
@@ -343,7 +359,7 @@ async function startApp() {
   app.use(router.allowedMethods());
 
   // 起動ログ
-  console.info(new Date().toLocaleString(), "==== Server Start ====");
+  console.info(jst(), "==== Server Start ====");
 
   // アプリケーションを起動
   await app.listen({ port: 8000 });
